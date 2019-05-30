@@ -1,30 +1,29 @@
 
 function[y] = RBF(x,v, gamma, y_star)
-    y_0 = GMat_calculator(x,v,gamma);
-    %disp(y_0)
+    y_0 = GMat_calculator(x, v, gamma);
     %disp('---------------------')
     y_1 = w_calculator(y_0, y_star);
     y = y_calculator(y_0, y_1);
-    %disp(y)
-    %disp('---------------------')
+    disp(y)
+    disp('---------------------')
 end
 
 function[G] = GMat_calculator(x, v, gamma)
-    G = zeros(length(x), length(v)/2);
+    G = zeros(length(x), length(v)/3);
     for i=1:1:length(x)
-        for j=1:2:length(v)
-            G(i,ceil(j/2)) = exp((-1)*gamma*norm(v(j,:), (v(j+1,:)), x(i,:)));
-            if isnan(exp((-1)*gamma*norm(v(j,:), (v(j+1,:)), x(i,:))))
-            G(i,ceil(j/2)) = 0;
+        for j=1:3:length(v)
+            G(i,ceil(j/3)) = exp((-1)*gamma*norm(v(j,:), (v(j+1,:)), v(j+2,:), x(i,:)));
+            if isnan(exp((-1)*gamma*norm(v(j,:), (v(j+1,:)), v(j+2,:), x(i,:))))
+            G(i,ceil(j/3)) = 0;
             end
         end
     end
 
 end
 
-function[res] = norm(v, w, x)
+function[res] = norm(v, w, p, x)
     t = [transpose(v) transpose(w)];
-    res = (x - t)*transpose(x-t);
+    res = (x - t)*transpose(x-t)/(p*p);
 end
 
 function[w] = w_calculator(G, y)

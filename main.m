@@ -16,7 +16,7 @@ switch fun
     %f       = @(x,u) (1/(2*length(input)))*sum(abs((sign(RBF(input, x, gamma, y_star)) - y_star))); 
     f      = @(x,u) (1-x(1,:)).^2 + 100*(x(2,:)-x(1,:).^2).^2;
     %f       = @(x,u) (1/(2))*sum(abs((sign(RBF(input, x, gamma, y_star)) - y_star)));
-    n_x    = 4;                           % 'n_x' states
+    n_x    = 6;                           % 'n_x' states
     limits = repmat([0 410], n_x, 1);      % Boundaries
     obj    = 0;
 otherwise
