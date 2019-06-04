@@ -1,28 +1,31 @@
 
-function[y] = RBF(x,v, gamma, y_star)
-    y_0 = GMat_calculator(x, v, gamma);
+function[y, y_1] = RBF(x,v, gamma, y_star, dim)
+    y_0 = GMat_calculator(x, v, gamma, dim);
     %disp('---------------------')
     y_1 = w_calculator(y_0, y_star);
     y = y_calculator(y_0, y_1);
-    disp(y)
-    disp('---------------------')
+    %disp(y)
+    %disp('---------------------')
 end
 
-function[G] = GMat_calculator(x, v, gamma)
+function[G] = GMat_calculator(x, v, gamma, dim)
+    %disp(v)
+    %disp(v(1:3))
+    %disp('--------------------------')
     G = zeros(length(x), length(v)/3);
     for i=1:1:length(x)
-        for j=1:3:length(v)
-            G(i,ceil(j/3)) = exp((-1)*gamma*norm(v(j,:), (v(j+1,:)), v(j+2,:), x(i,:)));
-            if isnan(exp((-1)*gamma*norm(v(j,:), (v(j+1,:)), v(j+2,:), x(i,:))))
-            G(i,ceil(j/3)) = 0;
+        for j=1:dim+1:length(v)
+            G(i,ceil(j/(dim+1))) = exp((-1)*gamma*norm(v(j:j+dim-1), v(j+dim,:), x(i,:)));
+            if isnan(exp((-1)*gamma*norm(v(j:j+dim-1), v(j+dim,:), x(i,:))))
+            G(i,ceil(j/(dim+1))) = 0;
             end
         end
     end
 
 end
 
-function[res] = norm(v, w, p, x)
-    t = [transpose(v) transpose(w)];
+function[res] = norm(v, p, x)
+    t = transpose(v);
     res = (x - t)*transpose(x-t)/(p*p);
 end
 

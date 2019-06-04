@@ -1,4 +1,4 @@
-function [min_x, min_f, off, EPS,j, min_arr, min_arr2] = evolution_strategy(f, mu, lambda, gen, sel, rec_obj, rec_str, u, obj, nf, n, limits, func_sel, x_0, sigma)
+function [min_x, min_f, off, EPS,j, min_arr, min_arr2] = evolution_strategy(f, mu, lambda, gen, sel, rec_obj, rec_str, u, obj, nf, n, limits, func_sel, dim, x_0, sigma)
 %%  [min_x, min_f, off, EPS,j] = evolution_strategy(f, mu, lambda, gen, sel, rec_obj, rec_str, u, obj, nf, n, limits, x_0, sigma)
 %
 %   This function tries to optimize the function 'f' using "evolution
@@ -69,18 +69,20 @@ function [min_x, min_f, off, EPS,j, min_arr, min_arr2] = evolution_strategy(f, m
 %   Date: 20-Sep-2011
 %% Beggining
 %% Initialization:
-a = randn(100, 2)+[1 300];
-b = rand(100, 2) + [400 1];
-c = rand(100, 2) + [100 100];
-input = [a;b;c];
+a = randn(100, 2) + [1 300];
+c = randn(100, 2) + [100 300];
+b = randn(100, 2) + [400 1];
+input = [a;c;b];
+%disp(input)
 %input = [1 300.5; 1 300;1.2 300.6; 400 1; 400.5 1; 405.5 1.2; 2 304; 1.5 323; 420 2];
-b = ones(100,1);
+b = ones(200,1);
 a = ones(100,1)*(-1);
 y_star= [b;a];
 %y_star = [1; 1; 1; -1; -1; -1; 1; 1; -1];
-gamma = 1/(10);
-min_arr = zeros(4,gen);
-min_arr2 = zeros(gen,1);
+gamma = 1;
+min_arr = zeros(n, gen);
+min_arr2 = zeros(gen, 1);
+min_w = zeros(n/(dim+1), gen);
 if ((sel ~= ',') && (sel ~= '+'))
   error('not supported selection scheme')
 end
@@ -103,11 +105,11 @@ for i = 1:mu
   %disp(length(x_0(:,i)))%
   %disp(x_0(:,i))%
   if (func_sel == 1)
-    value(:,i) = (1/(2*length(input)))*sum(abs((sign(RBF(input, x_0(:,i), gamma, y_star)) - y_star)));
+    value(:,i) = (1/(2*length(input)))*sum(abs((sign(RBF(input, x_0(:,i), gamma, y_star, dim)) - y_star)));
   elseif(func_sel == 2)
-    value(:,i) = (1/2)*transpose((RBF(input, x_0(:,i), gamma, y_star) - y_star))*(RBF(input, x_0(:,i), gamma, y_star) - y_star);
+    value(:,i) = (1/2)*transpose((RBF(input, x_0(:,i), gamma, y_star, dim) - y_star))*(RBF(input, x_0(:,i), gamma, y_star, dim) - y_star);
   elseif(func_sel == 3)
-    value(:,i) = sum(sign((abs(indmax(RBF(input, x_0(:,i) , gamma, y_star)) - indmax(y_star)))))/(length(input));
+    value(:,i) = sum(sign((abs(indmax(RBF(input, x_0(:,i) , gamma, y_star, dim)) - indmax(y_star)))))/(length(input));
   
   end
   %disp((1/(2*length(input)))*sum(abs((sign(RBF(input, x_0(:,i), gamma, y_star)) - y_star))));
@@ -133,11 +135,11 @@ if n == 1
   X = linspace(limits(1,1),limits(1,2),100);
   %Y = f(X,[]);
   if (func_sel == 1)
-    Y = (1/(2*length(input)))*sum(abs((sign(RBF(input, X, gamma, y_star)) - y_star)));
+    Y = (1/(2*length(input)))*sum(abs((sign(RBF(input, X, gamma, y_star, dim)) - y_star)));
   elseif(func_sel == 2)
-    Y = (1/2)*transpose((RBF(input, X, gamma, y_star) - y_star))*(RBF(input, X, gamma, y_star) - y_star);
+    Y = (1/2)*transpose((RBF(input, X, gamma, y_star, dim) - y_star))*(RBF(input, X, gamma, y_star, dim) - y_star);
   elseif(func_sel == 3)
-    Y = sum(sign((abs(indmax(RBF(input, X , gamma, y_star)) - indmax(y_star)))))/(length(input));
+    Y = sum(sign((abs(indmax(RBF(input, X , gamma, y_star, dim)) - indmax(y_star)))))/(length(input));
   end
   plot(X,Y);
   hold on;
@@ -147,11 +149,11 @@ elseif n == 2
   [X,Y] = meshgrid(linspace(limits(1,1),limits(1,2),100),linspace(limits(2,1),limits(2,2),100));
   %Z = reshape(f([X(:) Y(:)]',[]), 100, 100);
   if (func_sel == 1)
-    Z = reshape((1/(2*length(input)))*sum(abs((sign(RBF(input,[X(:) Y(:)]' , gamma, y_star)) - y_star))), 100, 100);
+    Z = reshape((1/(2*length(input)))*sum(abs((sign(RBF(input,[X(:) Y(:)]' , gamma, y_star, dim)) - y_star))), 100, 100);
   elseif(func_sel == 2)
-    Z = reshape((1/2)*transpose((RBF(input, [X(:) Y(:)]' , gamma, y_star) - y_star))*(RBF(input, [X(:) Y(:)]', gamma, y_star) - y_star),100,100);
+    Z = reshape((1/2)*transpose((RBF(input, [X(:) Y(:)]' , gamma, y_star, dim) - y_star))*(RBF(input, [X(:) Y(:)]', gamma, y_star, dim) - y_star),100,100);
   elseif(func_sel == 3)
-    Z = reshape(sum(sign((abs(indmax(RBF(input, [X(:) Y(:)]' , gamma, y_star)) - indmax(y_star)))))/(length(input)), 100, 100); 
+    Z = reshape(sum(sign((abs(indmax(RBF(input, [X(:) Y(:)]' , gamma, y_star, dim)) - indmax(y_star)))))/(length(input)), 100, 100); 
   end
   contour(X,Y,Z,30,'k');      % Contour plot
   grid on
@@ -179,14 +181,16 @@ while ((j < gen))
   
   %% Evaluation:
   phie = zeros(nf,lambda);
+  phie_0 = zeros(nf,lambda);
   for i = 1:lambda
     %phie(:,i) = f(xm(:,i),u);
+    [temp, phie_0(:,i)] = RBF(input,xm(:,i) , gamma, y_star, dim);
     if (func_sel == 1)
-        phie(:,i) = (1/(2*length(input)))*sum(abs((sign(RBF(input,xm(:,i) , gamma, y_star)) - y_star)));
+        phie(:,i) = (1/(2*length(input)))*sum(abs((sign(temp) - y_star)));
     elseif(func_sel == 2)
-        phie(:,i) = (1/2)*transpose((RBF(input, xm(:,i), gamma, y_star) - y_star))*(RBF(input, xm(:,i), gamma, y_star) - y_star);
+        [phie(:,i)] = (1/2)*transpose((temp - y_star))*(temp - y_star);
     elseif(func_sel == 3)
-        phie(:,i) = sum(sign((abs(indmax(RBF(input, xm(:,i) , gamma, y_star)) - indmax(y_star)))))/(length(input));
+        phie(:,i) = sum(sign((abs(indmax(temp) - indmax(y_star)))))/(length(input));
     end
   end
   epse = abs(obj - phie(1,:));
@@ -194,6 +198,7 @@ while ((j < gen))
   t1 = find(epse==min(epse));
   t1 = t1(1);
   min_arr(:,j+1) = xm(:,t1);
+  min_w(:,j+1) = phie_0()
   %disp(t1)
   min_arr2(j+1) = min(epse);
   
@@ -204,11 +209,11 @@ while ((j < gen))
   for i = 1:mu
     %value(:,i) = f(min_x{j+1}(:,i),u);
     if (func_sel == 1)
-        value(:,i) = (1/(2*length(input)))*sum(abs((sign(RBF(input,min_x{j+1}(:,i) , gamma, y_star)) - y_star)));
+        value(:,i) = (1/(2*length(input)))*sum(abs((sign(RBF(input,min_x{j+1}(:,i) , gamma, y_star, dim)) - y_star)));
     elseif(func_sel == 2)    
-        value(:,i) = (1/2)*transpose((RBF(input, min_x{j+1}(:,i), gamma, y_star) - y_star))*(RBF(input,min_x{j+1}(:,i), gamma, y_star) - y_star);
+        value(:,i) = (1/2)*transpose((RBF(input, min_x{j+1}(:,i), gamma, y_star, dim) - y_star))*(RBF(input,min_x{j+1}(:,i), gamma, y_star, dim) - y_star);
     elseif(func_sel == 3)
-        value(:,i) = sum(sign((abs(indmax(RBF(input, min_x{j+1}(:,i) , gamma, y_star)) - indmax(y_star)))))/(length(input));
+        value(:,i) = sum(sign((abs(indmax(RBF(input, min_x{j+1}(:,i) , gamma, y_star, dim)) - indmax(y_star)))))/(length(input));
     end
   end
   min_f{j+1} = value;                 % next approximation
