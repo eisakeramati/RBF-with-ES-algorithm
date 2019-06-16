@@ -69,21 +69,75 @@ function [min_x, min_f, off, EPS,j, min_arr, min_arr2, min_w] = evolution_strate
 %   Date: 20-Sep-2011
 %% Beggining
 %% Initialization:
-a = randn(100, 2) + [1 300];
-c = randn(100, 2) + [60 300];
-b = randn(100, 2) + [400 1];
-input = [a;c;b];
+if (func_sel==3)
+dataTable = readtable('42.csv', 'Format', '%f%f%f');
+%dataTable = dataTable(randperm(size(dataTable,1)),:);
+dataTable.Properties.VariableNames = {'col1', 'col2', 'col3'};
+a = dataTable.col1(1:1200);
+b = dataTable.col2(1:1200);
+input = [a,b];
+y_star = zeros(1200, 4);
+for i=1:1:1200
+      if (dataTable.col3(i) == 1)
+        y_star(i,:) = [1,0,0,0];
+       elseif (dataTable.col3(i) == 2)
+        y_star(i,:) = [0,1,0,0];
+        
+        elseif (dataTable.col3(i) == 3)
+        y_star(i,:) = [0,0,1,0];
+        
+        elseif (dataTable.col3(i) == 4)
+        y_star(i,:) = [0,0,0,1];
+        
+    end
+end
+end
+if(func_sel==2)
+    dataTable = readtable('reg.csv', 'Format', '%f%f%f%f');
+dataTable = dataTable(randperm(size(dataTable,1)),:);
+dataTable.Properties.VariableNames = {'col1', 'col2', 'col3', 'col4'};
+a = dataTable.col1(1:900);
+%a = normalize(a);
+b = dataTable.col2(1:900);
+%b = normalize(b);
+c = dataTable.col3(1:900);
+%c = normalize(c);
+input = [a,b,c];
+y_star = zeros(900, 1);
+for i=1:1:900
+    y_star(i) = dataTable.col4(i);
+end
+end
+
+
+if(func_sel == 1)
+    dataTable = readtable('21.csv', 'Format', '%f%f%f');
+%dataTable = dataTable(randperm(size(dataTable,1)),:);
+dataTable.Properties.VariableNames = {'col1', 'col2', 'col3'};
+a = dataTable.col1(1:1200);
+b = dataTable.col2(1:1200);
+input = [a,b];
+y_star = dataTable.col3(1:1200);
+end
+
+%a = randn(100, 2) + [1 300];
+%c = randn(100, 2) + [60 300];
+%b = randn(100, 2) + [400 1];
+%input = [a;c;b];
+ %disp(input)
 %input =[a;b];
 %disp(input)
 %input = [1 300.5; 1 300;1.2 300.6; 400 1; 400.5 1; 405.5 1.2; 2 304; 1.5 323; 420 2];
-b = ones(200,1);
-a = ones(100,1)*(-1);
-y_star= [b;a];
+
 %y_star = [1; 1; 1; -1; -1; -1; 1; 1; -1];
 gamma = 1;
 min_arr = zeros(n, gen);
 min_arr2 = zeros(gen, 1);
-min_w = zeros(n/(dim+1), gen);
+if func_sel == 3
+    min_w = zeros(n/(dim+1), length(y_star(1,:)), gen);
+else
+    min_w = zeros(n/(dim+1), gen);
+end
 if ((sel ~= ',') && (sel ~= '+'))
   error('not supported selection scheme')
 end
@@ -182,11 +236,19 @@ while ((j < gen))
   
   %% Evaluation:
   phie = zeros(nf,lambda);
-  phie_0 = zeros(n/(dim+1), lambda);
+  if (func_sel ~= 3)
+    phie_0 = zeros(n/(dim+1), lambda);
+  else
+    phie_0 = zeros(n/(dim+1), length(y_star(1,:)), lambda);
+  end
   for i = 1:lambda
     %phie(:,i) = f(xm(:,i),u);
-    [temp, phie_0(:,i)] = RBF(input,xm(:,i) , gamma, y_star, dim);
-    %disp(temp)
+    if (func_sel ~= 3) 
+       [temp, phie_0(:,i)] = RBF(input,xm(:,i) , gamma, y_star, dim);
+    else
+        [temp, phie_0(:, :, i)] = RBF(input,xm(:,i) , gamma, y_star, dim);
+    end
+    %disp(phie_0(:,i))
     %disp('**********')
     if (func_sel == 1)
         phie(:,i) = (1/(2*length(input)))*sum(abs((sign(temp) - y_star)));
@@ -200,10 +262,17 @@ while ((j < gen))
   %% set the two arrays:
   t1 = find(epse==min(epse));
   t1 = t1(1);
-  min_arr(:,j+1) = xm(:,t1);
-  min_w(:,j+1) = phie_0(:,t1);
+  min_arr(:,j) = xm(:,t1);
+  if (func_sel ~= 3) 
+       min_w(:,j) = phie_0(:,t1);
+  else
+       min_w(:, :, j) = phie_0(:,:,t1);
+       
+       %disp(phie_0(:,:,t1))
+       %disp('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz')
+  end
   %disp(t1)
-  min_arr2(j+1) = min(epse);
+  min_arr2(j) = min(epse);
   
   %% Selection:
   [min_x{j+1}, sigma, alpha] = selection(sel, mu, lambda, epse, eps, xm, sigmam, min_x{j}, sigma, alpham, alpha);

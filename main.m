@@ -17,9 +17,9 @@ switch fun
     f      = @(x,u) (1-x(1,:)).^2 + 100*(x(2,:)-x(1,:).^2).^2;
     %f       = @(x,u) (1/(2))*sum(abs((sign(RBF(input, x, gamma, y_star)) - y_star)));
     dim = 2;
-    v_num = 2;
+    v_num = 7;
     n_x    = (dim+1)*v_num;                           % 'n_x' states
-    limits = repmat([0 410], n_x, 1);      % Boundaries
+    limits = repmat([-10 20], n_x, 1);      % Boundaries
     obj    = 0;
 otherwise
     error('Not supported equation');
@@ -29,15 +29,15 @@ end
 nf      = 1;                 % length of the output vector 'f(x,y)'
 mu      = 100;               % parent population size
 lambda  = 100;               % offspring population size
-gen     = 100;               % number of generations
+gen     = 10;               % number of generations
 sel     = '+';               % Selection scheme (Pag. 78 in (BACK))
-rec_obj = 2;                 % Type of recombination to use on object
+rec_obj = 3;                 % Type of recombination to use on object
                              % variables (Pag. 74 in (BACK))
                              % See 'recombination.m'
 rec_str = 2;                 % Type of recombination to use on strategy
                              % parameters (Pag. 74 in (BACK))
-u       = 0;                 % external excitation
-func_sel = 2;                % fitness function type selection
+u        = 0;                % external excitation
+func_sel = 3;                % fitness function type selection
 
 %% Run "Evolutionary Strategy" (ES):
 [min_x, min_f, off, EPS,idx, arr1, arr2, arr3] = evolution_strategy(f, mu, lambda, gen, sel, rec_obj, rec_str, u, obj, nf, n_x, limits, func_sel, dim);
@@ -51,6 +51,9 @@ disp('------------------------------')
 disp(arr2)
 disp('------------------------------')
 disp(arr3)
+
+arr2(arr2 == 0 ) = NaN;
+[val,Ind] = min(arr2);
 %%    
 %v = [1 2.5; 4 2.5];
 %res = GMat_calculator(input, v, gamma);
@@ -62,15 +65,161 @@ disp(arr3)
 a = randn(20, 2) + [1 300];
 c = randn(20, 2) + [60 300];
 b = randn(20, 2) + [400 1];
-input = [a;c;b];
-%input = [a;b];
-b = ones(40,1);
-a = ones(20,1)*(-1);
-y_star= [b;a];
 
-g = GMat_calculator(input, arr1(:,length(arr1)), 1, dim);
-y = g*arr3(:,length(arr3));
-disp(y)
+if (func_sel == 3)
+dataTable = readtable('41.csv', 'Format', '%f%f%f');
+%dataTable = dataTable(randperm(size(dataTable,1)),:);
+dataTable.Properties.VariableNames = {'col1', 'col2', 'col3'};
+a = dataTable.col1(1:4000);
+b = dataTable.col2(1:4000);
+input = [a,b];
+y_star = dataTable.col3(1:4000);
+
+end
+
+if (func_sel == 2)
+    dataTable = readtable('reg.csv', 'Format', '%f%f%f%f');
+%dataTable = dataTable(randperm(size(dataTable,1)),:);
+dataTable.Properties.VariableNames = {'col1', 'col2', 'col3', 'col4'};
+a = dataTable.col1(1:1500);
+%a = normalize(a);
+b = dataTable.col2(1:1500);
+%b = normalize(b);
+c = dataTable.col3(1:1500);
+%c = normalize(c);
+input = [a,b,c];
+y_star = zeros(1500, 1);
+for i=1:1:1500
+    y_star(i) = dataTable.col4(i);
+end
+end
+
+if(func_sel == 1)
+    dataTable = readtable('22.csv', 'Format', '%f%f%f');
+%dataTable = dataTable(randperm(size(dataTable,1)),:);
+dataTable.Properties.VariableNames = {'col1', 'col2', 'col3'};
+a = dataTable.col1(1:4000);
+b = dataTable.col2(1:4000);
+input = [a,b];
+y_star = dataTable.col3(1:4000);
+end
+
+g = GMat_calculator(input, arr1(:,Ind), 1, dim);
+if (func_sel==2)
+y = g*arr3(:, Ind);
+acc = (1/2)*transpose((y - y_star))*(y - y_star);
+scatter((1:1:1500),y)
+hold('on')
+scatter((1:1:1500),y_star)
+end
+
+if (func_sel==3)
+y = g*arr3(:, :, Ind);
+acc = sum(sign((abs(indmax(y) - y_star))))/(length(input));
+data = zeros(4000, 2);
+data2 = zeros(4000, 2);
+a =0;
+for i = 1:1:4000
+    
+    disp(indmax(y(i)))
+    disp(y(i))
+    disp('----------------------------------------')
+    if(indmax(y(i,:)) ~= y_star(i))
+        a = a+1;
+        disp(indmax(y(i)))
+        temp = [input(i,1), input(i,2)];
+        data(i,:) = temp;
+    else
+        temp = [input(i,1), input(i,2)];
+        data2(i,:) = temp;
+    end
+    
+end
+
+disp('++++++++++++++++')
+v = zeros(v_num, 2);
+for i = 1:3:n_x
+    temp1 = arr1(:,Ind);
+    temp = [temp1(i), temp1(i+1)];
+    v(i,:) = temp;
+end
+
+scatter(data2(:,1), data2(:,2),'filled')
+hold('on')
+scatter(data(:,1), data(:,2),'filled')
+hold('on')
+scatter(v(:,1), v(:,2))
+
+end
+
+
+if(func_sel == 1)
+    dataTable = readtable('22.csv', 'Format', '%f%f%f');
+%dataTable = dataTable(randperm(size(dataTable,1)),:);
+dataTable.Properties.VariableNames = {'col1', 'col2', 'col3'};
+a = dataTable.col1(1:4000);
+b = dataTable.col2(1:4000);
+input = [a,b];
+y_star = dataTable.col3(1:4000);
+end
+
+g = GMat_calculator(input, arr1(:,Ind), 1, dim);
+if(func_sel == 3)
+y = g*arr3(:, :, Ind);
+acc = sum(sign((abs(indmax(y) - indmax(y_star)))))/(length(input));
+end
+if (func_sel==2)
+y = g*arr3(:, Ind);
+acc = (1/2)*transpose((y - y_star))*(y - y_star);
+scatter((1:1:1500),y)
+hold('on')
+scatter((1:1:1500),y_star)
+end
+
+if (func_sel==1)
+y = g*arr3(:, Ind);
+acc = (1/(2*length(input)))*sum(abs((sign(y) - y_star)));
+data = zeros(4000, 2);
+data2 = zeros(4000, 2);
+a =0;
+for i = 1:1:4000
+    
+    if(sign(y(i)) ~= y_star(i))
+        a = a+1;
+        temp = [input(i,1), input(i,2)];
+        data(i,:) = temp;
+    else
+        temp = [input(i,1), input(i,2)];
+        data2(i,:) = temp;
+    end
+    
+end
+
+disp('++++++++++++++++')
+v = zeros(v_num, 2);
+for i = 1:3:n_x
+    temp1 = arr1(:,Ind);
+    temp = [temp1(i), temp1(i+1)];
+    v(i,:) = temp;
+end
+
+scatter(data2(:,1), data2(:,2),'filled')
+hold('on')
+scatter(data(:,1), data(:,2),'filled')
+hold('on')
+scatter(v(:,1), v(:,2))
+
+end
+
+%disp(arr3(:, :, Ind))
+%disp(indmax(y))
+%disp(indmax(y_star))
+%disp('----------------------')
+%disp(y_star)
+%disp('---------------------')
+%disp(y)
+disp(acc)
+disp(a)
 
 
 function[G] = GMat_calculator(x, v, gamma, dim)
